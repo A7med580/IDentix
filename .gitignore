@@ -1,0 +1,24 @@
+# System files
+.DS_Store
+__pycache__/
+*.pyc
+
+# Dataset & Features (Large files)
+data/face/
+data/voice/
+data/iris/
+data/features/
+*.npy
+*.zip
+
+# Virtual Environments
+venv/
+env/
+.env
+
+# Streamlit
+.streamlit/
+
+# Temporary files
+temp_face.jpg
+temp_voice.wav
