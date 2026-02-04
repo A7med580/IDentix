@@ -3,9 +3,11 @@ opencv-python
 librosa
 scikit-learn
 matplotlib
-streamlit
 kagglehub
 deepface
 pandas
 seaborn
 tf-keras
+flask
+flask-cors
+python-dotenv
