@@ -11,3 +11,4 @@ tf-keras
 flask
 flask-cors
 python-dotenv
+Faker==40.1.2

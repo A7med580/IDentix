@@ -19,12 +19,16 @@ A production-grade biometric authentication system combining **Face Recognition*
 
 ## 🎯 Overview
 
-**IDentix** is an advanced multi-modal biometric authentication system that combines:
+**IDentix** is an advanced multi-modal biometric authentication and **attendance management system** that combines:
 - **Face Recognition**: Using DeepFace (VGG-Face model) for facial feature extraction
 - **Voice Verification**: Using MFCC (Mel-Frequency Cepstral Coefficients) for voice pattern analysis
 - **Score-Level Fusion**: Weighted combination of both modalities for enhanced security
+- **Person Identification**: 1:N matching to identify individuals from a database
+- **Attendance Tracking**: Automatic check-in/check-out logging with timestamps
+- **Analytics Dashboard**: Real-time attendance statistics and visualizations
+- **Admin Portal**: Secure face-based authentication for administrators
 
-The system achieves higher accuracy than single-modality systems by leveraging the strengths of both face and voice biometrics.
+The system achieves higher accuracy than single-modality systems by leveraging the strengths of both face and voice biometrics, and provides a complete attendance management solution with analytics and reporting.
 
 ---
 
@@ -220,6 +224,45 @@ The UI will start on `http://localhost:5173`
 
 ---
 
+## 🏢 Attendance Management Features
+
+### Admin Dashboard
+Access the admin portal at `http://localhost:5173/dashboard` to:
+- View **real-time attendance statistics** (total persons, present today, late count)
+- See **visual analytics** with pie charts showing attendance distribution
+- Monitor **today's attendance log** with check-in/check-out times
+- Access quick actions for person management
+
+### Person Management
+- **Add New Person**: Register employees with face, voice, and personal information
+- **View All Persons**: Browse, search, and filter the 20 registered persons
+- **Person Details**: View individual analytics including:
+  - Attendance percentage
+  - On-time vs late statistics
+  - Complete attendance history
+
+### Attendance Tracking
+- **Automatic Check-in**: Upload face/voice → System identifies person → Logs attendance
+- **Person Identification**: 1:N matching shows who checked in
+- **Timestamp Recording**: Captures exact check-in and check-out times
+- **Status Classification**: Automatically marks as "on-time" or "late" (threshold: 9:00 AM)
+
+### Analytics & Reporting
+- **Dashboard Overview**: Total persons, present today, late count, attendance rate
+- **Individual Analytics**: Per-person statistics and attendance history
+- **Visual Charts**: Pie charts for attendance distribution and status breakdown
+- **Historical Data**: 6 months of pre-loaded attendance records (Aug 2025 - Feb 2026)
+
+### Demo Data
+The system comes pre-loaded with:
+- **20 fake people** with realistic profiles (names, emails, departments)
+- **2,458 attendance records** spanning 6 months
+- **Realistic patterns**: Perfect attendance, good, average, and poor performers
+- **Complete biometric data**: Face embeddings and voice MFCCs for each person
+
+
+---
+
 ## 📁 Project Structure
 
 ```
@@ -245,16 +288,30 @@ IDentix/
 ├── evaluation/                  # Performance metrics
 │   └── metrics.py              # Accuracy, EER, ROC curves
 │
+├── utils/                       # Utility modules (NEW)
+│   ├── database_manager.py     # JSON database operations
+│   └── fake_data_generator.py  # Generate demo data
+│
 ├── data/                        # Data storage
+│   ├── database.json           # Attendance database (NEW)
 │   └── features/               # Precomputed biometric features
 │       ├── face_embeddings.npy
 │       └── voice_mfccs.npy
 │
 ├── frontend/                    # React application
 │   ├── src/
-│   │   ├── App.jsx             # Main UI component
+│   │   ├── App.jsx             # Main UI with routing
 │   │   ├── index.css           # Tailwind styles
-│   │   └── main.jsx            # React entry point
+│   │   ├── main.jsx            # React entry point
+│   │   ├── components/         # Reusable components (NEW)
+│   │   │   └── Navbar.jsx      # Navigation bar
+│   │   └── pages/              # Page components (NEW)
+│   │       ├── AdminLogin.jsx  # Admin authentication
+│   │       ├── Dashboard.jsx   # Analytics dashboard
+│   │       ├── PersonsList.jsx # All persons table
+│   │       ├── AddPerson.jsx   # Person registration
+│   │       ├── PersonDetails.jsx # Individual analytics
+│   │       └── Verification.jsx # Check-in/out
 │   ├── package.json
 │   └── vite.config.js
 │
@@ -282,9 +339,141 @@ Check system status and database availability.
 ```
 
 ### `POST /api/verify`
-Authenticate a user using biometric data.
+Authenticate a user using biometric data (legacy endpoint).
 
 **Request:**
+- Content-Type: `multipart/form-data`
+- Body:
+  - `face` (optional): Image file (JPG/PNG)
+  - `voice` (optional): Audio file (WAV/MP3)
+
+**Response:**
+```json
+{
+  "verified": true,
+  "scores": {
+    "face": 0.87,
+    "voice": 0.76,
+    "fused": 0.83
+  },
+  "threshold": 0.7
+}
+```
+
+### Attendance Management Endpoints
+
+#### `POST /api/admin/login`
+Admin authentication via face recognition.
+
+**Request:**
+- `face`: Admin face image
+
+**Response:**
+```json
+{
+  "success": true,
+  "admin": {
+    "id": "admin_001",
+    "name": "Admin User"
+  }
+}
+```
+
+#### `GET /api/persons`
+Get all registered persons (with optional filters).
+
+**Query Parameters:**
+- `status`: Filter by status (active/inactive)
+- `department`: Filter by department
+
+**Response:**
+```json
+{
+  "persons": [
+    {
+      "id": "P001",
+      "name": "Angela Valenzuela",
+      "employee_id": "EMP001",
+      "department": "Engineering",
+      "email": "angela.valenzuela@company.com",
+      "status": "active"
+    }
+  ]
+}
+```
+
+#### `POST /api/persons`
+Register a new person.
+
+**Request:**
+- Form data: name, employee_id, date_of_birth, gender, department, email, phone
+- Files: face (required), voice (optional)
+
+#### `POST /api/attendance/checkin`
+Check-in with person identification.
+
+**Request:**
+- `face`: Face image
+- `voice`: Voice recording (optional)
+
+**Response:**
+```json
+{
+  "verified": true,
+  "person": {
+    "id": "P001",
+    "name": "Angela Valenzuela",
+    "employee_id": "EMP001",
+    "department": "Engineering"
+  },
+  "attendance": {
+    "id": "ATT00001",
+    "date": "2026-02-04",
+    "check_in": "08:45:00",
+    "status": "on_time"
+  },
+  "scores": {
+    "face": 0.92,
+    "voice": 0.85,
+    "fused": 0.89
+  }
+}
+```
+
+#### `GET /api/analytics/overview`
+Get dashboard statistics.
+
+**Response:**
+```json
+{
+  "total_persons": 20,
+  "present_today": 19,
+  "late_today": 3,
+  "attendance_rate": 95.0
+}
+```
+
+#### `GET /api/analytics/person/:id`
+Get individual person analytics.
+
+**Query Parameters:**
+- `start_date`: Start date (YYYY-MM-DD)
+- `end_date`: End date (YYYY-MM-DD)
+
+**Response:**
+```json
+{
+  "stats": {
+    "total_days_present": 24,
+    "attendance_percentage": 100.0,
+    "on_time_count": 19,
+    "late_count": 5,
+    "absent_count": 0
+  },
+  "history": [...]
+}
+```
+
 - Content-Type: `multipart/form-data`
 - Body:
   - `face` (optional): Image file (JPG/PNG)
