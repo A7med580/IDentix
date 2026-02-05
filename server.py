@@ -366,6 +366,146 @@ def checkin():
             }
         }), 401
 
+@app.route('/api/attendance/checkout', methods=['POST'])
+def checkout():
+    """Check-out with face and/or voice verification."""
+    face_file = request.files.get('face')
+    voice_file = request.files.get('voice')
+    
+    if not face_file and not voice_file:
+        return jsonify({"error": "No biometric data provided"}), 400
+    
+    face_score = 0.0
+    voice_score = 0.0
+    matched_person_id = None
+    best_match_score = 0.0
+    
+    # Get all persons
+    all_persons = db.get_all_persons(status='active')
+    
+    # Process Face
+    if face_file:
+        filename = secure_filename(face_file.filename)
+        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        face_file.save(temp_path)
+        
+        try:
+            probe_emb = extract_face_embeddings(temp_path)
+            
+            if probe_emb is not None:
+                # Match against all persons
+                for person in all_persons:
+                    if person.get('face_embedding'):
+                        gallery_emb = np.array(person['face_embedding'])
+                        score = fusion_engine.matcher.match_face(probe_emb, gallery_emb)
+                        
+                        if score > face_score:
+                            face_score = score
+                            if score > best_match_score:
+                                best_match_score = score
+                                matched_person_id = person['id']
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+    
+    # Process Voice
+    if voice_file:
+        filename = secure_filename(voice_file.filename)
+        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        voice_file.save(temp_path)
+        
+        try:
+            probe_mfcc = extract_mfcc(temp_path)
+            
+            if probe_mfcc is not None:
+                # Match against all persons
+                for person in all_persons:
+                    if person.get('voice_mfcc'):
+                        gallery_mfcc = np.array(person['voice_mfcc'])
+                        score = fusion_engine.matcher.match_voice(probe_mfcc, gallery_mfcc)
+                        
+                        if score > voice_score:
+                            voice_score = score
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+    
+    # Fusion
+    fused_score = fusion_engine.fuse_scores(face_score, voice_score)
+    is_verified = fusion_engine.make_decision(fused_score)
+    
+    # Log attendance if verified
+    if is_verified and matched_person_id:
+        attendance_record = db.log_attendance(matched_person_id, "checkout")
+        person = db.get_person(matched_person_id)
+        
+        return jsonify({
+            "verified": True,
+            "person": {
+                "id": person['id'],
+                "name": person['name'],
+                "employee_id": person['employee_id'],
+                "department": person['department']
+            },
+            "attendance": attendance_record,
+            "scores": {
+                "face": float(face_score),
+                "voice": float(voice_score),
+                "fused": float(fused_score)
+            }
+        })
+    else:
+        return jsonify({
+            "verified": False,
+            "message": "No matching person found",
+            "scores": {
+                "face": float(face_score),
+                "voice": float(voice_score),
+                "fused": float(fused_score)
+            }
+        }), 401
+
+@app.route('/api/attendance/export', methods=['GET'])
+def export_attendance():
+    """Export attendance history to CSV."""
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    records = db.get_attendance_history(start_date=start_date, end_date=end_date)
+    
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    writer.writerow(['ID', 'Person ID', 'Name', 'Department', 'Date', 'Check In', 'Check Out', 'Status'])
+    
+    # Write data
+    for record in records:
+        person = db.get_person(record['person_id'])
+        name = person['name'] if person else "Unknown"
+        dept = person['department'] if person else "Unknown"
+        
+        writer.writerow([
+            record['id'],
+            record['person_id'],
+            name,
+            dept,
+            record['date'],
+            record['check_in'] or '',
+            record['check_out'] or '',
+            record['status']
+        ])
+    
+    output.seek(0)
+    
+    return send_file(
+        io.BytesIO(output.getvalue().encode('utf-8')),
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name=f'attendance_export_{datetime.now().strftime("%Y%m%d")}.csv'
+    )
+
 @app.route('/api/attendance/today', methods=['GET'])
 def get_today_attendance():
     """Get today's attendance."""

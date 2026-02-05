@@ -9,7 +9,7 @@ function Verification() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
 
-  const handleVerify = async () => {
+  const handleVerify = async (action) => {
     if (!faceFile && !voiceFile) {
       toast.error('Please upload at least one biometric file')
       return
@@ -23,7 +23,11 @@ function Verification() {
     if (voiceFile) formData.append('voice', voiceFile)
 
     try {
-      const response = await axios.post('http://localhost:5001/api/attendance/checkin', formData)
+      const endpoint = action === 'checkin'
+        ? 'http://localhost:5001/api/attendance/checkin'
+        : 'http://localhost:5001/api/attendance/checkout'
+
+      const response = await axios.post(endpoint, formData)
 
       if (response.data.verified) {
         setResult(response.data)
@@ -86,14 +90,23 @@ function Verification() {
           </div>
         </div>
 
-        {/* Verify Button */}
-        <button
-          onClick={handleVerify}
-          disabled={loading}
-          className="btn-primary w-full mb-8"
-        >
-          {loading ? 'Verifying...' : '✅ CHECK IN'}
-        </button>
+        {/* Actions */}
+        <div className="flex gap-4 mb-8">
+          <button
+            onClick={() => handleVerify('checkin')}
+            disabled={loading}
+            className="btn-primary flex-1"
+          >
+            {loading ? 'Verifying...' : '✅ CHECK IN'}
+          </button>
+          <button
+            onClick={() => handleVerify('checkout')}
+            disabled={loading}
+            className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+          >
+            {loading ? 'Verifying...' : '👋 CHECK OUT'}
+          </button>
+        </div>
 
         {/* Results */}
         {result && (

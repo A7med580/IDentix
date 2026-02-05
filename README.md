@@ -222,6 +222,27 @@ The UI will start on `http://localhost:5173`
    - **Fused Score ≥ 70%**: Access Granted ✅
    - **Fused Score < 70%**: Access Denied ❌
 
+## 📸  Screenshots
+
+| Dashboard | Person Details |
+|-----------|----------------|
+| ![Dashboard](https://placehold.co/600x400?text=Dashboard+Overview) | ![Person Details](https://placehold.co/600x400?text=Person+Analytics) |
+| **Real-time Analytics** | **Individual Stats** |
+
+| Verification | Admin Login |
+|--------------|-------------|
+| ![Verification](https://placehold.co/600x400?text=Biometric+Verification) | ![Admin Login](https://placehold.co/600x400?text=Admin+Auth) |
+| **Face & Voice Check-in** | **Secure Access** |
+
+---
+
+## 📚 Documentation
+
+- [**Deployment Guide**](docs/DEPLOYMENT.md): Instructions for deploying to production.
+- [**Demo Script**](docs/DEMO_SCRIPT.md): Script for showcasing the system features.
+- [**User Manual**](docs/USER_MANUAL.md): Comprehensive guide for end-users.
+- [**API Reference**](README.md#api-documentation): Detailed API endpoints documentation.
+
 ---
 
 ## 🏢 Attendance Management Features
