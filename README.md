@@ -226,12 +226,12 @@ The UI will start on `http://localhost:5173`
 
 | Dashboard | Person Details |
 |-----------|----------------|
-| ![Dashboard](https://placehold.co/600x400?text=Dashboard+Overview) | ![Person Details](https://placehold.co/600x400?text=Person+Analytics) |
+| ![Dashboard](docs/images/dashboard.png) | ![Person Details](docs/images/person_details.png) |
 | **Real-time Analytics** | **Individual Stats** |
 
 | Verification | Admin Login |
 |--------------|-------------|
-| ![Verification](https://placehold.co/600x400?text=Biometric+Verification) | ![Admin Login](https://placehold.co/600x400?text=Admin+Auth) |
+| ![Verification](docs/images/verification.png) | ![Admin Login](docs/images/admin_login.png) |
 | **Face & Voice Check-in** | **Secure Access** |
 
 ---
